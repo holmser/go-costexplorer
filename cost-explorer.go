@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"strconv"
 	"time"
@@ -24,16 +23,7 @@ func getDates() *costexplorer.DateInterval {
 	return &dateRange
 }
 
-// Shamelessly stolen from https://stackoverflow.com/questions/18390266/how-can-we-truncate-float64-type-to-a-particular-precision-in-golang
-func round(num float64) int {
-	return int(num + math.Copysign(0.5, num))
-}
-
-func toFixed(num float64, precision int) float64 {
-	output := math.Pow(10, float64(precision))
-	return float64(round(num*output)) / output
-}
-
+// covert string to float to string for proper formatting
 func formatNumber(s string) string {
 	f, _ := strconv.ParseFloat(s, 64)
 	return fmt.Sprintf("%.2f", f)
