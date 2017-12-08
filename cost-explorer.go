@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
+	"github.com/bradfitz/slice"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -19,6 +22,21 @@ func getDates() *costexplorer.DateInterval {
 	dateRange.SetEnd(now.Format("2006-01-02"))
 	dateRange.SetStart(then.Format("2006-01-02"))
 	return &dateRange
+}
+
+// Shamelessly stolen from https://stackoverflow.com/questions/18390266/how-can-we-truncate-float64-type-to-a-particular-precision-in-golang
+func round(num float64) int {
+	return int(num + math.Copysign(0.5, num))
+}
+
+func toFixed(num float64, precision int) float64 {
+	output := math.Pow(10, float64(precision))
+	return float64(round(num*output)) / output
+}
+
+func formatNumber(s string) string {
+	f, _ := strconv.ParseFloat(s, 64)
+	return fmt.Sprintf("%.2f", f)
 }
 
 func main() {
@@ -46,7 +64,7 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		fmt.Println(resp)
+		// fmt.Println(resp)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
@@ -54,10 +72,24 @@ func main() {
 	table.SetHeader([]string{"Service", "Cost"})
 	// sorted := sort.Sort(resp.ResultsByTime[0].Groups)
 	var data [][]string
-	for _, key := range resp.ResultsByTime[0].Groups {
-		data = append(data, []string{aws.StringValue(key.Keys[0]), aws.StringValue(key.Metrics["BlendedCost"].Amount)})
-	}
-	table.AppendBulk(data)
+	for i, group := range resp.ResultsByTime {
+		// fmt.Println(group)
+		slice.Sort(group.Groups[:], func(i, j int) bool {
+			a, _ := strconv.ParseFloat(*group.Groups[i].Metrics["BlendedCost"].Amount, 64)
+			b, _ := strconv.ParseFloat(*group.Groups[j].Metrics["BlendedCost"].Amount, 64)
+			return a > b
+		})
+		for j, key := range group.Groups {
+			dollas := formatNumber(aws.StringValue(key.Metrics["BlendedCost"].Amount))
+			if i == 0 {
 
+				data = append(data, []string{aws.StringValue(key.Keys[0]), dollas})
+			} else {
+				data[j] = append(data[j], dollas)
+			}
+		}
+	}
+
+	table.AppendBulk(data)
 	table.Render()
 }
