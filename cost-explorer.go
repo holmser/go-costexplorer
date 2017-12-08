@@ -12,13 +12,13 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-func getDates() costexplorer.DateInterval {
+func getDates() *costexplorer.DateInterval {
 	now := time.Now()
 	then := now.AddDate(0, 0, -7)
 	dateRange := costexplorer.DateInterval{}
 	dateRange.SetEnd(now.Format("2006-01-02"))
 	dateRange.SetStart(then.Format("2006-01-02"))
-	return dateRange
+	return &dateRange
 }
 
 func main() {
@@ -28,32 +28,29 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+
 	svc := costexplorer.New(sess)
-	input := costexplorer.GetCostAndUsageInput{}
 
-	metrics := aws.String("BlendedCost")
-	metricsSlice := []*string{metrics}
+	resp, err := svc.GetCostAndUsage((&costexplorer.GetCostAndUsageInput{
+		Metrics:     []*string{aws.String("BlendedCost")},
+		TimePeriod:  getDates(),
+		Granularity: aws.String("DAILY"),
+		GroupBy: []*costexplorer.GroupDefinition{
+			&costexplorer.GroupDefinition{
+				Key:  aws.String("SERVICE"),
+				Type: aws.String("DIMENSION"),
+			},
+		},
+	}))
 
-	group := costexplorer.GroupDefinition{}
-	group.SetType("DIMENSION")
-	group.SetKey("SERVICE")
-	groups := []*costexplorer.GroupDefinition{&group}
-
-	input.SetGroupBy(groups)
-	input.SetMetrics(metricsSlice)
-
-	dates := getDates()
-	input.SetGranularity("DAILY")
-	input.SetTimePeriod(&dates)
-	// input.SetGroupBy("SERVICE")
-	// fmt.Println(dateRange.Validate())
-
-	resp, err := svc.GetCostAndUsage(&input)
 	if err != nil {
 		fmt.Println(err)
+	} else {
+		fmt.Println(resp)
 	}
-	// fmt.Printf("%#v", resp.ResultsByTime[0])
+
 	table := tablewriter.NewWriter(os.Stdout)
+
 	table.SetHeader([]string{"Service", "Cost"})
 	// sorted := sort.Sort(resp.ResultsByTime[0].Groups)
 	var data [][]string
