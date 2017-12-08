@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,6 +11,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+// getDates returns a DateInterval for the last week
 func getDates() *costexplorer.DateInterval {
 	now := time.Now()
 	then := now.AddDate(0, 0, -7)
@@ -56,14 +56,8 @@ func main() {
 	var data [][]string
 	for _, key := range resp.ResultsByTime[0].Groups {
 		data = append(data, []string{aws.StringValue(key.Keys[0]), aws.StringValue(key.Metrics["BlendedCost"].Amount)})
-
 	}
-
-	sort.Slice(data[:], func(i, j int) bool {
-		fmt.Println(i, j)
-		// return i[1] < j[1]
-		return false
-	})
+	table.AppendBulk(data)
 
 	table.Render()
 }
