@@ -56,7 +56,7 @@ func main() {
 	var data [][]string
 	for _, key := range resp.ResultsByTime[0].Groups {
 		data = append(data, []string{aws.StringValue(key.Keys[0]), aws.StringValue(key.Metrics["BlendedCost"].Amount)})
-		//		table.Append(data)
+
 	}
 
 	sort.Slice(data[:], func(i, j int) bool {
@@ -66,12 +66,4 @@ func main() {
 	})
 
 	table.Render()
-	// fmt.Println(err)
-
-	// fmt.Printf("%d-%d-%d\n", now.Year(), now.Month(), now.Day())
-	//
-	// now = now.AddDate(0, 0, 1)
-	//
-	// fmt.Printf("%d-%d-%d\n", now.Year(), now.Month(), now.Day())
-
 }
