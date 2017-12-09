@@ -23,10 +23,23 @@ func getDates() *costexplorer.DateInterval {
 	return &dateRange
 }
 
-// covert string to float to string for proper formatting
+// covert string to float to string for formatting
 func formatNumber(s string) string {
 	f, _ := strconv.ParseFloat(s, 64)
+	// fmt.Printf("%.2f", f)
+	f = f / 100
 	return fmt.Sprintf("%.2f", f)
+}
+
+// generate the date headers for the table
+func dateHeaders() []string {
+	now := time.Now()
+	dates := []string{"AWS Service"}
+	for i := 7; i > 0; i-- {
+		n := now.AddDate(0, 0, -i)
+		dates = append(dates, n.Format("01-02"))
+	}
+	return dates
 }
 
 func main() {
@@ -59,23 +72,31 @@ func main() {
 
 	table := tablewriter.NewWriter(os.Stdout)
 
-	table.SetHeader([]string{"Service", "Cost"})
+	table.SetHeader(dateHeaders())
+	// append(table)
+
 	// sorted := sort.Sort(resp.ResultsByTime[0].Groups)
 	var data [][]string
 	for i, group := range resp.ResultsByTime {
 		// fmt.Println(group)
+		fmt.Println(len(group.Groups))
 		slice.Sort(group.Groups[:], func(i, j int) bool {
 			a, _ := strconv.ParseFloat(*group.Groups[i].Metrics["BlendedCost"].Amount, 64)
 			b, _ := strconv.ParseFloat(*group.Groups[j].Metrics["BlendedCost"].Amount, 64)
 			return a > b
 		})
 		for j, key := range group.Groups {
+			// fmt.Println(j, key)
 			dollas := formatNumber(aws.StringValue(key.Metrics["BlendedCost"].Amount))
-			if i == 0 {
+			if dollas != "0.00" {
+				if i == 0 {
 
-				data = append(data, []string{aws.StringValue(key.Keys[0]), dollas})
-			} else {
-				data[j] = append(data[j], dollas)
+					data = append(data, []string{aws.StringValue(key.Keys[0]), dollas})
+				} else {
+					if j < len(data) {
+						data[j] = append(data[j], dollas)
+					}
+				}
 			}
 		}
 	}
