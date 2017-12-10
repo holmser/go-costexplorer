@@ -87,26 +87,28 @@ func main() {
 	// sorted := sort.Sort(resp.ResultsByTime[0].Groups)
 	var data [][]string
 	for i, group := range resp.ResultsByTime {
-		// fmt.Println(group)
-		// fmt.Println(len(group.Groups))
+
+		// Sort Map by dollar cost
 		slice.Sort(group.Groups[:], func(i, j int) bool {
 			a, _ := strconv.ParseFloat(*group.Groups[i].Metrics["BlendedCost"].Amount, 64)
 			b, _ := strconv.ParseFloat(*group.Groups[j].Metrics["BlendedCost"].Amount, 64)
 			return a > b
 		})
+
+		//
 		for j, key := range group.Groups {
 			// fmt.Println(j, key)
-			dollas := formatNumber(aws.StringValue(key.Metrics["BlendedCost"].Amount))
-			if dollas != "0.00" {
-				if i == 0 {
-
-					data = append(data, []string{aws.StringValue(key.Keys[0]), dollas})
-				} else {
-					if j < len(data) {
-						data[j] = append(data[j], dollas)
-					}
+			//dollas := formatNumber(aws.StringValue(key.Metrics["BlendedCost"].Amount))
+			// if dollas != "0.00" {
+			if i == 0 {
+				data = append(data, []string{aws.StringValue(key.Keys[0]), dollas})
+			} else {
+				if j < len(data) {
+					f, _ := strconv.ParseFloat(*key.Metrics["BlendedCost"].Amount, 64)
+					data[j] = append(data[j], f)
 				}
 			}
+			// }
 		}
 	}
 	for i := range data {
